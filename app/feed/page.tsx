@@ -13,7 +13,7 @@ function FeedContent() {
   
   const searchParams = useSearchParams();
   const room = searchParams.get('room') || 'main';
-
+    
   // 1. Fetch existing requests & subscribe to realtime
   useEffect(() => {
     const fetchRequests = async () => {
@@ -25,7 +25,11 @@ function FeedContent() {
     const channel = supabase.channel('room_requests')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests', filter: `room_id=eq.${room}` }, (payload) => {
         setRequests((prev) => [payload.new, ...prev]);
-      }).subscribe();
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'requests' }, (payload) => {
+        setRequests((prev) => prev.filter((req) => req.id !== payload.old.id));
+      })
+      .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [room]);

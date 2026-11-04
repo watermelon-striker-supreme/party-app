@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Song } from '@/types';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function HomeContent() {
   const [query, setQuery] = useState('');
@@ -26,9 +27,9 @@ function HomeContent() {
           console.error(err);
         }
       } else {
-        setResults([]); // Clear if less than 2 chars
+        setResults([]);
       }
-    }, 400); // Wait 400ms after user stops typing
+    }, 400);
 
     return () => clearTimeout(timer);
   }, [query]);
@@ -41,51 +42,87 @@ function HomeContent() {
       artist: song.artist, 
       album_art: song.albumArt 
     }]);
-    
-    // Instantly route to the feed
     router.push(`/feed?room=${room}`);
   };
 
   return (
-    <main className="min-h-screen bg-black text-white p-6 flex flex-col items-center pt-24">
-      <div className="w-full max-w-md relative">
-        <h1 className="text-4xl font-bold mb-2 text-center text-purple-500">Request a Song</h1>
-        <p className="text-center text-gray-400 mb-8">Room: {room.toUpperCase()}</p>
+    <main className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      
+      {/* Abstract Asymmetric Red Background Glow */}
+      <div className="absolute bottom-[-10%] right-[-10%] w-[80%] h-[80%] bg-red-600/20 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-red-900/10 blur-[100px] rounded-full pointer-events-none" />
 
-        {/* Search Input */}
-        <div className="relative">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="w-full max-w-md relative z-10"
+      >
+        <div className="text-center mb-10">
+          <motion.h1 
+            initial={{ scale: 0.9 }}
+            animate={{ scale: 1 }}
+            className="text-6xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+          >
+            bench<span className="text-red-500">.</span>
+          </motion.h1>
+        </div>
+
+        {/* Search Input Container */}
+        <div className="relative group">
+          {/* Asymmetric Red Glow behind the input (Hover only) */}
+          <div className="absolute -inset-1 bg-gradient-to-br from-red-600/0 via-red-600/20 to-red-600/40 rounded-2xl blur-lg opacity-50 group-hover:opacity-100 transition duration-500" />
+          
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Type to search..."
+            placeholder="request a song"
             disabled={isRequesting}
-            className="w-full p-4 rounded-lg bg-gray-900 border border-gray-700 text-white text-lg focus:outline-none focus:border-purple-500 relative z-20"
+            className="relative w-full p-5 rounded-2xl bg-[#111111] border border-red-900/30 text-white text-lg placeholder:text-red-500/30 placeholder:font-medium focus:outline-none focus:border-red-900/50 transition-all shadow-[10px_10px_30px_-10px_rgba(220,38,38,0.2)]"
           />
 
-          {/* Real-time Dropdown */}
-          {query.trim().length > 1 && results.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl z-10 max-h-96 overflow-y-auto">
-              {results.map((song) => (
-                <button
-                  key={song.id}
-                  onClick={() => submitRequest(song)}
-                  disabled={isRequesting}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-gray-700 transition text-left border-b border-gray-700/50 last:border-b-0"
-                >
-                  <img src={song.albumArt} alt="" className="w-12 h-12 rounded object-cover" />
-                  <div className="flex-1 overflow-hidden">
-                    <p className="font-bold truncate text-sm">{song.title}</p>
-                    <p className="text-xs text-gray-400 truncate">{song.artist}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Dropdown Results */}
+          <AnimatePresence>
+            {query.trim().length > 1 && results.length > 0 && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute top-full left-0 right-0 mt-3 bg-[#111111]/95 backdrop-blur-xl border border-red-900/30 rounded-2xl shadow-2xl z-50 max-h-80 overflow-y-auto overflow-x-hidden"
+              >
+                {results.map((song, index) => (
+                  <motion.button
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    key={song.id}
+                    onClick={() => submitRequest(song)}
+                    disabled={isRequesting}
+                    className="w-full flex items-center gap-4 p-4 hover:bg-red-500/10 transition-colors text-left border-b border-red-900/20 last:border-b-0 group/item"
+                  >
+                    <img src={song.albumArt} alt="" className="w-12 h-12 rounded object-cover shadow-md group-hover/item:scale-105 transition-transform" />
+                    <div className="flex-1 overflow-hidden">
+                      <p className="font-bold truncate text-white group-hover/item:text-red-400 transition-colors">{song.title}</p>
+                      <p className="text-sm text-gray-400 truncate">{song.artist}</p>
+                    </div>
+                  </motion.button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-        
-        {isRequesting && <p className="text-center text-purple-400 mt-4 animate-pulse">Sending to DJ...</p>}
-      </div>
+
+        {isRequesting && (
+          <motion.p 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            className="text-center text-red-500 mt-6 font-bold tracking-widest uppercase text-sm animate-pulse"
+          >
+            Sending to DJ...
+          </motion.p>
+        )}
+      </motion.div>
     </main>
   );
 }

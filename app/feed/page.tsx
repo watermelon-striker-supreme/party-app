@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Song } from '@/types';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function FeedContent() {
   const [requests, setRequests] = useState<any[]>([]);
@@ -13,8 +14,7 @@ function FeedContent() {
   
   const searchParams = useSearchParams();
   const room = searchParams.get('room') || 'main';
-    
-  // 1. Fetch existing requests & subscribe to realtime
+
   useEffect(() => {
     const fetchRequests = async () => {
       const { data } = await supabase.from('requests').select('*').eq('room_id', room).order('created_at', { ascending: false });
@@ -34,7 +34,6 @@ function FeedContent() {
     return () => { supabase.removeChannel(channel); };
   }, [room]);
 
-  // 2. Real-time search with debounce
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (query.trim().length > 1) {
@@ -49,11 +48,9 @@ function FeedContent() {
         setResults([]); 
       }
     }, 400);
-
     return () => clearTimeout(timer);
   }, [query]);
 
-  // 3. Submit request without leaving the page
   const submitRequest = async (song: Song) => {
     setIsRequesting(true);
     await supabase.from('requests').insert([{ 
@@ -62,76 +59,95 @@ function FeedContent() {
       artist: song.artist, 
       album_art: song.albumArt 
     }]);
-    
-    // Clear search state so they can do it again
     setQuery('');
     setResults([]);
     setIsRequesting(false);
   };
 
   return (
-    <main className="min-h-screen bg-black text-white p-6">
-      <div className="max-w-md mx-auto">
+    <main className="min-h-screen bg-[#050505] text-white p-6 relative overflow-hidden">
+      <div className="absolute bottom-[-10%] right-[-10%] w-[80%] h-[80%] bg-red-600/10 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-red-900/10 blur-[100px] rounded-full pointer-events-none" />
+
+      <div className="max-w-md mx-auto relative z-10 pt-4">
         
         {/* Header */}
-        <div className="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
-          <h1 className="text-2xl font-bold">Live Requests</h1>
-          <span className="bg-purple-900/50 text-purple-300 px-3 py-1 rounded-full text-sm font-bold border border-purple-800">
-            {room.toUpperCase()}
-          </span>
+        <div className="flex justify-between items-center mb-8">
+          <motion.h1 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="text-3xl font-black tracking-tighter drop-shadow-[0_0_10px_rgba(239,68,68,0.3)]"
+          >
+            bench<span className="text-red-500">.</span>
+          </motion.h1>
         </div>
 
-        {/* Search Bar & Dropdown */}
-        <div className="relative mb-8 z-20">
+        {/* Search Bar */}
+        <div className="relative group mb-10 z-50">
+          <div className="absolute -inset-1 bg-gradient-to-br from-red-600/0 via-red-600/20 to-red-600/40 rounded-2xl blur-lg opacity-50 group-hover:opacity-100 transition duration-500" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search to request another..."
+            placeholder="request another song..."
             disabled={isRequesting}
-            className="w-full p-4 rounded-lg bg-gray-900 border border-gray-700 text-white focus:outline-none focus:border-purple-500 relative z-20"
+            className="relative w-full p-4 rounded-2xl bg-[#111111] border border-red-900/30 text-white placeholder:text-red-500/30 placeholder:font-medium focus:outline-none focus:border-red-900/50 transition-all shadow-[10px_10px_30px_-10px_rgba(220,38,38,0.2)]"
           />
 
-          {/* Real-time Dropdown */}
-          {query.trim().length > 1 && results.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl z-10 max-h-80 overflow-y-auto">
-              {results.map((song) => (
-                <button
-                  key={song.id}
-                  onClick={() => submitRequest(song)}
-                  disabled={isRequesting}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-gray-700 transition text-left border-b border-gray-700/50 last:border-b-0"
-                >
-                  <img src={song.albumArt} alt="" className="w-10 h-10 rounded object-cover" />
-                  <div className="flex-1 overflow-hidden">
-                    <p className="font-bold truncate text-sm">{song.title}</p>
-                    <p className="text-xs text-gray-400 truncate">{song.artist}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+          <AnimatePresence>
+            {query.trim().length > 1 && results.length > 0 && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute top-full left-0 right-0 mt-3 bg-[#111111]/95 backdrop-blur-xl border border-red-900/30 rounded-2xl shadow-2xl max-h-64 overflow-y-auto overflow-x-hidden"
+              >
+                {results.map((song, index) => (
+                  <motion.button
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    key={song.id}
+                    onClick={() => submitRequest(song)}
+                    className="w-full flex items-center gap-4 p-3 hover:bg-red-500/10 transition-colors text-left border-b border-red-900/20 last:border-b-0 group/item"
+                  >
+                    <img src={song.albumArt} alt="" className="w-10 h-10 rounded object-cover shadow-md" />
+                    <div className="flex-1 overflow-hidden">
+                      <p className="font-bold truncate text-sm group-hover/item:text-red-400 transition-colors">{song.title}</p>
+                      <p className="text-xs text-gray-500 truncate">{song.artist}</p>
+                    </div>
+                  </motion.button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        {isRequesting && <p className="text-center text-purple-400 mb-4 animate-pulse">Adding to queue...</p>}
+        {isRequesting && <p className="text-center text-red-500 mb-4 animate-pulse text-sm font-bold uppercase tracking-widest">Adding to queue...</p>}
 
-        {/* Live Feed List */}
-        <div className="space-y-3 relative z-0">
-          {requests.map((req) => (
-            <div key={req.id} className="flex items-center gap-3 p-3 bg-gray-900 rounded-lg border border-gray-800 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              {req.album_art ? (
-                <img src={req.album_art} alt="" className="w-14 h-14 rounded object-cover" />
-              ) : (
-                <div className="w-14 h-14 bg-gray-800 rounded flex items-center justify-center">🎵</div>
-              )}
-              <div className="overflow-hidden">
-                <p className="font-bold truncate text-lg">{req.title}</p>
-                <p className="text-sm text-gray-400 truncate">{req.artist}</p>
-              </div>
-            </div>
-          ))}
+        {/* Live Feed */}
+        <div className="space-y-3">
+          <AnimatePresence>
+            {requests.map((req) => (
+              <motion.div 
+                key={req.id}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                layout
+                className="flex items-center gap-4 p-3 bg-[#111111] rounded-xl border border-white/5 shadow-lg relative overflow-hidden group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 to-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <img src={req.album_art} alt="" className="w-14 h-14 rounded-lg object-cover shadow-md relative z-10" />
+                <div className="overflow-hidden relative z-10">
+                  <p className="font-bold truncate">{req.title}</p>
+                  <p className="text-sm text-gray-400 truncate">{req.artist}</p>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
           {requests.length === 0 && (
-            <div className="text-center mt-10">
+            <div className="text-center mt-20">
               <p className="text-gray-500">No requests yet. Be the first!</p>
             </div>
           )}

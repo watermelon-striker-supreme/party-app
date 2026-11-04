@@ -10,6 +10,7 @@ function HomeContent() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Song[]>([]);
   const [isRequesting, setIsRequesting] = useState(false);
+  const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -36,13 +37,16 @@ function HomeContent() {
 
   const submitRequest = async (song: Song) => {
     setIsRequesting(true);
+    setSelectedSong(song); 
+    setResults([]); 
+    setQuery('');
+
     await supabase.from('requests').insert([{ 
       room_id: room, 
       title: song.title, 
       artist: song.artist, 
       album_art: song.albumArt 
     }]);
-    router.push(`/feed?room=${room}`);
   };
 
   return (
@@ -70,7 +74,6 @@ function HomeContent() {
 
         {/* Search Input Container */}
         <div className="relative group">
-          {/* Asymmetric Red Glow behind the input (Hover only) */}
           <div className="absolute -inset-1 bg-gradient-to-br from-red-600/0 via-red-600/20 to-red-600/40 rounded-2xl blur-lg opacity-50 group-hover:opacity-100 transition duration-500" />
           
           <input
@@ -84,7 +87,7 @@ function HomeContent() {
 
           {/* Dropdown Results */}
           <AnimatePresence>
-            {query.trim().length > 1 && results.length > 0 && (
+            {query.trim().length > 1 && results.length > 0 && !selectedSong && (
               <motion.div 
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -112,17 +115,54 @@ function HomeContent() {
             )}
           </AnimatePresence>
         </div>
-
-        {isRequesting && (
-          <motion.p 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            className="text-center text-red-500 mt-6 font-bold tracking-widest uppercase text-sm animate-pulse"
-          >
-            Sending to DJ...
-          </motion.p>
-        )}
       </motion.div>
+
+      {/* THE THROW ANIMATION OVERLAY */}
+      <AnimatePresence>
+        {selectedSong && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.8, y: 100, rotate: -90, opacity: 0 }}
+              animate={{
+                scale: [0.8, 1, 1, 0.95, 0.3],
+                y: [100, 0, 0, 30, -1500], 
+                rotate: [-90, 0, 0, 180, 900], // Continuous spin through the wind-up
+                opacity: [0, 1, 1, 1, 0]
+              }}
+              transition={{
+                duration: 3.2, 
+                times: [0, 0.25, 0.4, 0.6, 1], 
+                // Default physics for Y and Scale (smooth crouch)
+                ease: ["easeOut", "linear", "easeOut", "easeIn"],
+                // Override physics for Rotation to keep it continuous
+                rotate: {
+                  duration: 3.2, 
+                  times: [0, 0.25, 0.4, 0.6, 1], 
+                  ease: ["easeOut", "linear", "linear", "easeIn"] 
+                }
+              }}
+              onAnimationComplete={() => {
+                router.push(`/feed?room=${room}`);
+              }}
+              className="relative"
+            >
+              {/* Soft glow */}
+              <div className="absolute -inset-4 bg-red-600/30 blur-2xl rounded-full" />
+              
+              <img 
+                src={selectedSong.albumArt} 
+                alt={selectedSong.title} 
+                className="w-72 h-72 md:w-80 md:h-80 rounded-2xl object-cover shadow-2xl border border-white/10 relative z-10" 
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }

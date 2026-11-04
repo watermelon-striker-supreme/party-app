@@ -127,32 +127,44 @@ function HomeContent() {
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md"
           >
             <motion.div
-              initial={{ scale: 0.8, y: 100, rotate: -90, opacity: 0 }}
+              initial={{ scale: 0.8, y: 100, opacity: 0 }}
               animate={{
-                scale: [0.8, 1, 1, 0.95, 0.3],
-                y: [100, 0, 0, 30, -1500], 
-                rotate: [-90, 0, 0, 180, 900], // Continuous spin through the wind-up
+                scale: [0.8, 1, 1, 0.95, 0.5],
+                y: [100, 0, 0, 50, -1500], 
                 opacity: [0, 1, 1, 1, 0]
               }}
               transition={{
-                duration: 3.2, 
-                times: [0, 0.25, 0.4, 0.6, 1], 
-                // Default physics for Y and Scale (smooth crouch)
-                ease: ["easeOut", "linear", "easeOut", "easeIn"],
-                // Override physics for Rotation to keep it continuous
-                rotate: {
-                  duration: 3.2, 
-                  times: [0, 0.25, 0.4, 0.6, 1], 
-                  ease: ["easeOut", "linear", "linear", "easeIn"] 
-                }
+                duration: 2.8, 
+                times: [0, 0.15, 0.5, 0.75, 1], 
+                ease: ["easeOut", "linear", "easeOut", [0.9, 0, 1, 1]] 
               }}
               onAnimationComplete={() => {
                 router.push(`/feed?room=${room}`);
               }}
-              className="relative"
+              className="relative flex items-center justify-center"
             >
-              {/* Soft glow */}
-              <div className="absolute -inset-4 bg-red-600/30 blur-2xl rounded-full" />
+              {/* LIQUID AURA (Darker, Sharper) */}
+              <motion.div
+                animate={{
+                  borderRadius: [
+                    "60% 40% 30% 70% / 60% 30% 70% 40%",
+                    "30% 60% 70% 40% / 50% 60% 30% 60%",
+                    "60% 40% 30% 70% / 60% 30% 70% 40%",
+                    "40% 60% 30% 70% / 60% 30% 70% 50%", 
+                    "10% 10% 90% 90% / 90% 90% 10% 10%"  
+                  ],
+                  rotate: [0, 90, 180, 270, 360], 
+                  scale: [0.8, 1, 1.05, 1.1, 0.1], // Toned down scaling
+                  opacity: [0, 0.5, 0.6, 0.8, 0] // Subtler opacity
+                }}
+                transition={{
+                  duration: 2.8,
+                  times: [0, 0.15, 0.5, 0.75, 1],
+                  ease: ["easeOut", "linear", "easeOut", "easeIn"]
+                }}
+                // Darker colors, blur-lg for sharper edges
+                className="absolute inset-[-2rem] bg-gradient-to-br from-red-900 via-red-950 to-black blur-lg z-0"
+              />
               
               <img 
                 src={selectedSong.albumArt} 

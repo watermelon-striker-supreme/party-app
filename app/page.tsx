@@ -92,11 +92,17 @@ function HomeContent() {
         transition={{ duration: 0.3 }}
         className="w-full max-w-md relative z-10"
       >
-        <div className="text-center mb-10">
+        {/* Logo - Reduced margin-bottom to balance the new text */}
+        <div className="text-center mb-6">
           <h1 className="text-6xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(239,68,68,0.3)]">
             bench<span className="text-red-500">.</span>
           </h1>
         </div>
+
+        {/* NEW SIMPLE TEXT */}
+        <p className="text-center text-sm md:text-base font-bold tracking-[0.2em] text-red-500/80 uppercase mb-8 drop-shadow-[0_0_8px_rgba(239,68,68,0.4)]">
+          Up Next: Your Faves
+        </p>
 
         {/* Search Input Container */}
         <div className="relative group">
@@ -108,6 +114,7 @@ function HomeContent() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="request a song"
             disabled={isRequesting}
+            style={{ fontFamily: 'var(--font-space)' }}
             className="relative w-full p-5 rounded-2xl bg-[#111111] border border-red-900/30 text-white text-lg placeholder:text-red-500/30 placeholder:font-medium focus:outline-none focus:border-red-900/50 transition-all shadow-[10px_10px_30px_-10px_rgba(220,38,38,0.2)]"
           />
 

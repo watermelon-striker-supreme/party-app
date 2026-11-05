@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 
 function DJContent() {
   const [requests, setRequests] = useState<any[]>([]);
+  const [pulsingSongs, setPulsingSongs] = useState<{ [key: string]: boolean }>({});
   const searchParams = useSearchParams();
   const room = searchParams.get('room') || 'main';
 
@@ -20,6 +21,14 @@ function DJContent() {
     const channel = supabase.channel('dj_requests')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests', filter: `room_id=eq.${room}` }, (payload) => {
         setRequests((prev) => [payload.new, ...prev]);
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests' }, (payload) => {
+        setRequests((prev) => prev.map(req => req.id === payload.new.id ? payload.new : req));
+        
+        setPulsingSongs(prev => ({ ...prev, [payload.new.id]: true }));
+        setTimeout(() => {
+          setPulsingSongs(prev => ({ ...prev, [payload.new.id]: false }));
+        }, 600); 
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'requests' }, (payload) => {
         setRequests((prev) => prev.filter((req) => req.id !== payload.old.id));
@@ -36,7 +45,6 @@ function DJContent() {
 
   return (
     <main className="min-h-screen bg-[#050505] text-white p-6 md:p-8 relative overflow-hidden">
-      {/* Background Glows */}
       <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[80%] h-[50%] bg-red-600/10 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="max-w-7xl mx-auto relative z-10">
@@ -53,54 +61,58 @@ function DJContent() {
         
         {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {requests.map((req) => (
-            <div 
-              key={req.id} 
-              className="group relative flex items-center gap-4 p-4 bg-[#111111] rounded-xl border border-white/5 hover:border-red-500/30 shadow-lg hover:shadow-[0_0_20px_rgba(220,38,38,0.15)] transition-all duration-300"
-            >
-              
-              {/* GLOW OVERLAY: Holds bright, then fades at the end */}
-              <motion.div
-                initial={{ 
-                  opacity: 1, 
-                  borderColor: "rgba(239,68,68,1)", 
-                  boxShadow: "0 0 35px rgba(239,68,68,0.8)" 
-                }}
-                animate={{ 
-                  opacity: [1, 1, 0], 
-                  borderColor: ["rgba(239,68,68,1)", "rgba(239,68,68,1)", "rgba(255,255,255,0.05)"], 
-                  boxShadow: [
-                    "0 0 35px rgba(239,68,68,0.8)", 
-                    "0 0 35px rgba(239,68,68,0.8)", 
-                    "0 0 0px rgba(239,68,68,0)"
-                  ] 
-                }}
-                transition={{ 
-                  duration: 2.0, 
-                  times: [0, 0.85, 1], // Holds at full brightness for 85% of the time (2.55s), fades in the last 0.45s
-                  ease: "easeOut" 
-                }}
-                className="absolute inset-0 rounded-xl pointer-events-none border z-0"
-              />
+          {requests.map((req) => {
+            // Cap at 20 likes for the glow
+            const likeIntensity = Math.min(req.likes || 0, 20); 
+            
+            // Background gets visibly brighter and redder as likes go up
+            const r = 17 + (likeIntensity * 4); 
+            const bgColor = `rgb(${r}, 17, 17)`; 
 
-              {/* Trash Button */}
-              <button 
-                onClick={() => deleteRequest(req.id)}
-                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white p-2 rounded-lg z-20 backdrop-blur-sm"
-                title="Remove request"
+            // Increased multipliers for a much more noticeable glow
+            const borderOpacity = 0.1 + (likeIntensity * 0.04); // 0.1 to 0.9
+            const shadowSpread = likeIntensity * 3; // 0px to 60px
+            const shadowOpacity = likeIntensity * 0.05; // 0 to 1.0
+
+            return (
+              <div 
+                key={req.id} 
+                style={{
+                  backgroundColor: bgColor, 
+                  borderColor: `rgba(255, 255, 255, ${borderOpacity})`,
+                  boxShadow: `0 4px 20px rgba(0,0,0,0.5), 0 0 ${shadowSpread}px rgba(239,68,68,${shadowOpacity})`
+                }}
+                className="group relative flex items-center gap-4 p-4 rounded-xl border transition-colors duration-300"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+                
+                {/* PULSE OVERLAY - Changed back to Red */}
+                {pulsingSongs[req.id] && (
+                  <motion.div
+                    initial={{ opacity: 1 }}
+                    animate={{ opacity: 0 }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    className="absolute inset-0 rounded-xl pointer-events-none border border-red-500 shadow-[0_0_40px_rgba(239,68,68,0.9)] z-0"
+                  />
+                )}
 
-              <img src={req.album_art} alt="" className="w-16 h-16 rounded-lg object-cover shadow-md relative z-10" />
-              <div className="overflow-hidden pr-6 relative z-10">
-                <p className="font-bold text-lg truncate leading-tight text-white">{req.title}</p>
-                <p className="text-gray-400 truncate text-sm mt-1">{req.artist}</p>
+                <button 
+                  onClick={() => deleteRequest(req.id)}
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white p-2 rounded-lg z-20 backdrop-blur-sm"
+                  title="Remove request"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+
+                <img src={req.album_art} alt="" className="w-16 h-16 rounded-lg object-cover shadow-md relative z-10" />
+                <div className="overflow-hidden pr-6 relative z-10">
+                  <p className="font-bold text-lg truncate leading-tight text-white">{req.title}</p>
+                  <p className="text-gray-400 truncate text-sm mt-1">{req.artist}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         
         {requests.length === 0 && (

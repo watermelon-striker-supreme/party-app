@@ -12,8 +12,20 @@ function FeedContent() {
   const [results, setResults] = useState<Song[]>([]);
   const [isRequesting, setIsRequesting] = useState(false);
   
+  const [hearts, setHearts] = useState<{ id: string, songId: string, xOffset: number, yOffset: number, color: string }[]>([]);
+  const [userLikes, setUserLikes] = useState<{ [key: string]: number }>({});
+  
   const searchParams = useSearchParams();
   const room = searchParams.get('room') || 'main';
+
+  useEffect(() => {
+    const savedLikes = localStorage.getItem(`bench_likes_${room}`);
+    if (savedLikes) {
+      try {
+        setUserLikes(JSON.parse(savedLikes));
+      } catch (e) {}
+    }
+  }, [room]);
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -25,6 +37,9 @@ function FeedContent() {
     const channel = supabase.channel('room_requests')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests', filter: `room_id=eq.${room}` }, (payload) => {
         setRequests((prev) => [payload.new, ...prev]);
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests' }, (payload) => {
+        setRequests((prev) => prev.map(req => req.id === payload.new.id ? payload.new : req));
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'requests' }, (payload) => {
         setRequests((prev) => prev.filter((req) => req.id !== payload.old.id));
@@ -64,6 +79,33 @@ function FeedContent() {
     setIsRequesting(false);
   };
 
+  const handleLike = async (songId: string) => {
+    const currentLikes = userLikes[songId] || 0;
+    
+    const heartColors = ['#f472b6', '#fb7185', '#f87171', '#ec4899', '#f43f5e'];
+    
+    const newHeart = { 
+      id: Math.random().toString(), 
+      songId, 
+      xOffset: Math.random() * 40 - 50, 
+      yOffset: -(50 + Math.random() * 50), 
+      color: heartColors[Math.floor(Math.random() * heartColors.length)]
+    };
+    setHearts(prev => [...prev, newHeart]);
+
+    setTimeout(() => {
+      setHearts(prev => prev.filter(h => h.id !== newHeart.id));
+    }, 1000);
+
+    if (currentLikes < 5) {
+      const newLikes = { ...userLikes, [songId]: currentLikes + 1 };
+      setUserLikes(newLikes);
+      localStorage.setItem(`bench_likes_${room}`, JSON.stringify(newLikes));
+      
+      await supabase.rpc('increment_like', { song_id: songId });
+    }
+  };
+
   return (
     <main className="min-h-screen bg-[#050505] text-white p-6 relative overflow-hidden">
       <div className="absolute bottom-[-10%] right-[-10%] w-[80%] h-[80%] bg-red-600/10 blur-[120px] rounded-full pointer-events-none" />
@@ -71,7 +113,6 @@ function FeedContent() {
 
       <div className="max-w-md mx-auto relative z-10 pt-4">
         
-        {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <motion.h1 
             initial={{ opacity: 0, x: -20 }}
@@ -82,7 +123,6 @@ function FeedContent() {
           </motion.h1>
         </div>
 
-        {/* Search Bar */}
         <div className="relative group mb-10 z-50">
           <div className="absolute -inset-1 bg-gradient-to-br from-red-600/0 via-red-600/20 to-red-600/40 rounded-2xl blur-lg opacity-50 group-hover:opacity-100 transition duration-500" />
           <input
@@ -91,6 +131,7 @@ function FeedContent() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="request another song..."
             disabled={isRequesting}
+            style={{ fontFamily: 'var(--font-space)' }}
             className="relative w-full p-4 rounded-2xl bg-[#111111] border border-red-900/30 text-white placeholder:text-red-500/30 placeholder:font-medium focus:outline-none focus:border-red-900/50 transition-all shadow-[10px_10px_30px_-10px_rgba(220,38,38,0.2)]"
           />
 
@@ -125,37 +166,70 @@ function FeedContent() {
 
         {isRequesting && <p className="text-center text-red-500 mb-4 animate-pulse text-sm font-bold uppercase tracking-widest">Adding to queue...</p>}
 
-        {/* Active Requests Header */}
         <h2 className="text-sm font-bold tracking-widest text-gray-400 uppercase mb-4 pl-1">
           Active Requests:
         </h2>
 
-        {/* Live Feed */}
         <div className="space-y-3">
           <AnimatePresence>
-            {requests.map((req) => (
-              <motion.div 
-                key={req.id}
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                layout
-                className="flex items-center gap-4 p-3 bg-[#111111] rounded-xl border border-white/5 shadow-lg relative overflow-hidden group"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 to-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <img src={req.album_art} alt="" className="w-14 h-14 rounded-lg object-cover shadow-md relative z-10" />
-                <div className="overflow-hidden relative z-10">
-                  <p className="font-bold truncate">{req.title}</p>
-                  <p className="text-sm text-gray-400 truncate">{req.artist}</p>
-                </div>
-              </motion.div>
-            ))}
+            {requests.map((req) => {
+              const userLikeCount = userLikes[req.id] || 0;
+              const isLiked = userLikeCount > 0;
+
+              return (
+                <motion.div 
+                  key={req.id}
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  layout
+                  onClick={() => handleLike(req.id)}
+                  style={{
+                    // If liked, give it a permanent, nice red glow and outline
+                    backgroundColor: isLiked ? '#151515' : '#111111', 
+                    borderColor: isLiked ? 'rgba(239,68,68,0.6)' : 'rgba(255,255,255,0.05)',
+                    boxShadow: isLiked ? '0 0 20px rgba(239,68,68,0.25)' : 'none'
+                  }}
+                  className={`flex items-center gap-4 p-3 rounded-xl border shadow-lg relative group select-none cursor-pointer hover:bg-[#151515] transition-colors duration-300`}
+                >
+                  <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none z-0">
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 to-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+
+                  <img src={req.album_art} alt="" className="w-14 h-14 rounded-lg object-cover shadow-md relative z-10 pointer-events-none" />
+                  <div className="overflow-hidden relative z-10 pointer-events-none">
+                    <p className="font-bold truncate">{req.title}</p>
+                    <p className="text-sm text-gray-400 truncate">{req.artist}</p>
+                  </div>
+
+                  <div className="absolute right-10 top-1/2 -translate-y-1/2 z-50 pointer-events-none">
+                    <AnimatePresence>
+                      {hearts.filter(h => h.songId === req.id).map((heart) => (
+                        <motion.div
+                          key={heart.id}
+                          initial={{ opacity: 0, y: 0, scale: 0.5, x: heart.xOffset }}
+                          animate={{ opacity: 1, y: heart.yOffset, scale: 1.2 }}
+                          exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
+                          transition={{ duration: 0.8, ease: "easeOut" }} 
+                          className="absolute"
+                        >
+                          <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            viewBox="0 0 24 24" 
+                            fill="currentColor" 
+                            style={{ color: heart.color }}
+                            className="w-10 h-10 drop-shadow-[0_0_15px_rgba(244,114,182,0.8)]"
+                          >
+                            <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
+                          </svg>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
-          {requests.length === 0 && (
-            <div className="text-center mt-10">
-              <p className="text-gray-500">No requests yet. Be the first!</p>
-            </div>
-          )}
         </div>
         
       </div>

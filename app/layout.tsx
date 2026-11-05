@@ -6,8 +6,8 @@ const outfit = Outfit({ subsets: ["latin"] });
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-space" });
 
 export const metadata: Metadata = {
-  title: "Bench | Request a Song",
-  description: "Take over the aux.",
+  title: "Bench.",
+  description: "Up Next: Your Faves",
 };
 
 export default function RootLayout({

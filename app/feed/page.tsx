@@ -125,6 +125,11 @@ function FeedContent() {
 
         {isRequesting && <p className="text-center text-red-500 mb-4 animate-pulse text-sm font-bold uppercase tracking-widest">Adding to queue...</p>}
 
+        {/* Active Requests Header */}
+        <h2 className="text-sm font-bold tracking-widest text-gray-400 uppercase mb-4 pl-1">
+          Active Requests:
+        </h2>
+
         {/* Live Feed */}
         <div className="space-y-3">
           <AnimatePresence>
@@ -147,7 +152,7 @@ function FeedContent() {
             ))}
           </AnimatePresence>
           {requests.length === 0 && (
-            <div className="text-center mt-20">
+            <div className="text-center mt-10">
               <p className="text-gray-500">No requests yet. Be the first!</p>
             </div>
           )}

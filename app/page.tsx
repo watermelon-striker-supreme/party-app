@@ -57,9 +57,30 @@ function HomeContent() {
   return (
     <main className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-6 relative overflow-hidden">
       
+      {/* FADED BACKGROUND LOGO - Shifted up behind the text */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 -translate-y-50 md:-translate-y-60">
+        <motion.div 
+          animate={{ 
+            y: [0, -15, 0], // Slow floating effect
+            opacity: [0.04, 0.07, 0.04] // Very faint, pulsing slightly
+          }}
+          transition={{ 
+            duration: 10, 
+            repeat: Infinity, 
+            ease: "easeInOut" 
+          }}
+        >
+          <img 
+            src="/bench-logo.png" 
+            alt="" 
+            className="w-[120vw] max-w-[800px] blur-[2px] object-contain" 
+          />
+        </motion.div>
+      </div>
+
       {/* Background Ambient Glows */}
-      <div className="absolute bottom-[-10%] right-[-10%] w-[80%] h-[80%] bg-red-600/20 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-red-900/10 blur-[100px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[80%] h-[80%] bg-red-600/20 blur-[120px] rounded-full pointer-events-none z-0" />
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-red-900/10 blur-[100px] rounded-full pointer-events-none z-0" />
 
       {/* Main UI - Fades out when a song is selected */}
       <motion.div 
@@ -129,8 +150,9 @@ function HomeContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-[#050505]/40 backdrop-blur-sm pointer-events-none"
+            className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none backdrop-brightness-150"
           >
+            
             <motion.div
               initial={{ scale: 0.8, y: 100, opacity: 0 }}
               animate={{
@@ -159,8 +181,8 @@ function HomeContent() {
                   className="w-72 h-72 md:w-80 md:h-80 object-cover relative z-10" 
                 />
 
-                {/* STATIC DIRECTIONAL DEPTH GRADIENT (Bumped up) */}
-                <div className="absolute inset-0 z-15 bg-gradient-to-br from-white/60 via-transparent to-black/70 pointer-events-none" />
+                {/* STATIC DIRECTIONAL DEPTH GRADIENT */}
+                <div className="absolute inset-0 z-15 bg-gradient-to-br from-white/30 via-transparent to-black/60 pointer-events-none" />
 
                 {/* DIAGONAL LIGHT SWEEP */}
                 <motion.div

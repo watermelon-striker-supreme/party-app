@@ -30,7 +30,6 @@ function DJContent() {
   }, [room]);
 
   const deleteRequest = async (id: string) => {
-    // Optimistic instant delete
     setRequests((prev) => prev.filter((req) => req.id !== id));
     await supabase.from('requests').delete().eq('id', id);
   };
@@ -52,13 +51,38 @@ function DJContent() {
           </div>
         </div>
         
-        {/* Grid (Updated to 4 columns) */}
+        {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {requests.map((req) => (
             <div 
               key={req.id} 
               className="group relative flex items-center gap-4 p-4 bg-[#111111] rounded-xl border border-white/5 hover:border-red-500/30 shadow-lg hover:shadow-[0_0_20px_rgba(220,38,38,0.15)] transition-all duration-300"
             >
+              
+              {/* GLOW OVERLAY: Holds bright, then fades at the end */}
+              <motion.div
+                initial={{ 
+                  opacity: 1, 
+                  borderColor: "rgba(239,68,68,1)", 
+                  boxShadow: "0 0 35px rgba(239,68,68,0.8)" 
+                }}
+                animate={{ 
+                  opacity: [1, 1, 0], 
+                  borderColor: ["rgba(239,68,68,1)", "rgba(239,68,68,1)", "rgba(255,255,255,0.05)"], 
+                  boxShadow: [
+                    "0 0 35px rgba(239,68,68,0.8)", 
+                    "0 0 35px rgba(239,68,68,0.8)", 
+                    "0 0 0px rgba(239,68,68,0)"
+                  ] 
+                }}
+                transition={{ 
+                  duration: 2.0, 
+                  times: [0, 0.85, 1], // Holds at full brightness for 85% of the time (2.55s), fades in the last 0.45s
+                  ease: "easeOut" 
+                }}
+                className="absolute inset-0 rounded-xl pointer-events-none border z-0"
+              />
+
               {/* Trash Button */}
               <button 
                 onClick={() => deleteRequest(req.id)}
@@ -70,8 +94,8 @@ function DJContent() {
                 </svg>
               </button>
 
-              <img src={req.album_art} alt="" className="w-16 h-16 rounded-lg object-cover shadow-md" />
-              <div className="overflow-hidden pr-6">
+              <img src={req.album_art} alt="" className="w-16 h-16 rounded-lg object-cover shadow-md relative z-10" />
+              <div className="overflow-hidden pr-6 relative z-10">
                 <p className="font-bold text-lg truncate leading-tight text-white">{req.title}</p>
                 <p className="text-gray-400 truncate text-sm mt-1">{req.artist}</p>
               </div>

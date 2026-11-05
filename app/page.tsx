@@ -47,29 +47,34 @@ function HomeContent() {
       artist: song.artist, 
       album_art: song.albumArt 
     }]);
+
+    // Route after 3.0 seconds
+    setTimeout(() => {
+      router.push(`/feed?room=${room}`);
+    }, 3000);
   };
 
   return (
     <main className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-6 relative overflow-hidden">
       
-      {/* Abstract Asymmetric Red Background Glow */}
+      {/* Background Ambient Glows */}
       <div className="absolute bottom-[-10%] right-[-10%] w-[80%] h-[80%] bg-red-600/20 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-red-900/10 blur-[100px] rounded-full pointer-events-none" />
 
+      {/* Main UI - Fades out when a song is selected */}
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
+        animate={{ 
+          opacity: selectedSong ? 0 : 1,
+          scale: selectedSong ? 0.95 : 1,
+          pointerEvents: selectedSong ? 'none' : 'auto'
+        }}
+        transition={{ duration: 0.3 }}
         className="w-full max-w-md relative z-10"
       >
         <div className="text-center mb-10">
-          <motion.h1 
-            initial={{ scale: 0.9 }}
-            animate={{ scale: 1 }}
-            className="text-6xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(239,68,68,0.3)]"
-          >
+          <h1 className="text-6xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(239,68,68,0.3)]">
             bench<span className="text-red-500">.</span>
-          </motion.h1>
+          </h1>
         </div>
 
         {/* Search Input Container */}
@@ -117,60 +122,45 @@ function HomeContent() {
         </div>
       </motion.div>
 
-      {/* THE THROW ANIMATION OVERLAY */}
+      {/* THROW ANIMATION OVERLAY */}
       <AnimatePresence>
         {selectedSong && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-[#050505]/40 backdrop-blur-sm pointer-events-none"
           >
             <motion.div
               initial={{ scale: 0.8, y: 100, opacity: 0 }}
               animate={{
-                scale: [0.8, 1, 1, 0.95, 0.5],
-                y: [100, 0, 0, 50, -1500], 
+                // The last value is 0.65 (not 1), so it stays compressed while launching
+                scale: [0.8, 1, 1, 0.65, 0.65],
+                y: [150, 0, 0, 250, -1500], 
                 opacity: [0, 1, 1, 1, 0]
               }}
               transition={{
-                duration: 2.8, 
-                times: [0, 0.15, 0.5, 0.75, 1], 
-                ease: ["easeOut", "linear", "easeOut", [0.9, 0, 1, 1]] 
-              }}
-              onAnimationComplete={() => {
-                router.push(`/feed?room=${room}`);
+                duration: 3.0,
+                times: [0, 0.15, 0.4, 0.7, 1], 
+                ease: ["easeOut", "linear", "easeOut", [0.8, 0, 1, 1]] 
               }}
               className="relative flex items-center justify-center"
             >
-              {/* LIQUID AURA (Darker, Sharper) */}
-              <motion.div
-                animate={{
-                  borderRadius: [
-                    "60% 40% 30% 70% / 60% 30% 70% 40%",
-                    "30% 60% 70% 40% / 50% 60% 30% 60%",
-                    "60% 40% 30% 70% / 60% 30% 70% 40%",
-                    "40% 60% 30% 70% / 60% 30% 70% 50%", 
-                    "10% 10% 90% 90% / 90% 90% 10% 10%"  
-                  ],
-                  rotate: [0, 90, 180, 270, 360], 
-                  scale: [0.8, 1, 1.05, 1.1, 0.1], // Toned down scaling
-                  opacity: [0, 0.5, 0.6, 0.8, 0] // Subtler opacity
-                }}
-                transition={{
-                  duration: 2.8,
-                  times: [0, 0.15, 0.5, 0.75, 1],
-                  ease: ["easeOut", "linear", "easeOut", "easeIn"]
-                }}
-                // Darker colors, blur-lg for sharper edges
-                className="absolute inset-[-2rem] bg-gradient-to-br from-red-900 via-red-950 to-black blur-lg z-0"
-              />
               
-              <img 
-                src={selectedSong.albumArt} 
-                alt={selectedSong.title} 
-                className="w-72 h-72 md:w-80 md:h-80 rounded-2xl object-cover shadow-2xl border border-white/10 relative z-10" 
-              />
+              {/* CLEAN PREMIUM CARD */}
+              <div 
+                className="relative rounded-2xl overflow-hidden border border-white/10"
+                style={{
+                  boxShadow: "0 20px 50px rgba(0,0,0,0.9)"
+                }}
+              >
+                <img 
+                  src={selectedSong.albumArt} 
+                  alt={selectedSong.title} 
+                  className="w-72 h-72 md:w-80 md:h-80 object-cover" 
+                />
+              </div>
+
             </motion.div>
           </motion.div>
         )}

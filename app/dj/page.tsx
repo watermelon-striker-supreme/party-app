@@ -45,7 +45,30 @@ function DJContent() {
 
   return (
     <main className="min-h-screen bg-[#050505] text-white p-6 md:p-8 relative overflow-hidden">
-      <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[80%] h-[50%] bg-red-600/10 blur-[120px] rounded-full pointer-events-none" />
+      
+      {/* FADED BACKGROUND LOGO */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+        <motion.div 
+          animate={{ 
+            y: [0, -15, 0], 
+            opacity: [0.02, 0.04, 0.02] 
+          }}
+          transition={{ 
+            duration: 10, 
+            repeat: Infinity, 
+            ease: "easeInOut" 
+          }}
+        >
+          <img 
+            src="/bench-logo.png" 
+            alt="" 
+            className="w-[120vw] max-w-[1000px] blur-[3px] object-contain" 
+          />
+        </motion.div>
+      </div>
+
+      {/* INCREASED BACKGROUND GLOW */}
+      <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[80%] h-[50%] bg-red-600/15 blur-[120px] rounded-full pointer-events-none z-0" />
 
       <div className="max-w-7xl mx-auto relative z-10">
         
@@ -62,17 +85,14 @@ function DJContent() {
         {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {requests.map((req) => {
-            // Cap at 20 likes for the glow
             const likeIntensity = Math.min(req.likes || 0, 20); 
             
-            // Background gets visibly brighter and redder as likes go up
             const r = 17 + (likeIntensity * 4); 
             const bgColor = `rgb(${r}, 17, 17)`; 
 
-            // Increased multipliers for a much more noticeable glow
-            const borderOpacity = 0.1 + (likeIntensity * 0.04); // 0.1 to 0.9
-            const shadowSpread = likeIntensity * 3; // 0px to 60px
-            const shadowOpacity = likeIntensity * 0.05; // 0 to 1.0
+            const borderOpacity = 0.1 + (likeIntensity * 0.04); 
+            const shadowSpread = likeIntensity * 3; 
+            const shadowOpacity = likeIntensity * 0.05; 
 
             return (
               <div 
@@ -85,7 +105,7 @@ function DJContent() {
                 className="group relative flex items-center gap-4 p-4 rounded-xl border transition-colors duration-300"
               >
                 
-                {/* PULSE OVERLAY - Changed back to Red */}
+                {/* PULSE OVERLAY */}
                 {pulsingSongs[req.id] && (
                   <motion.div
                     initial={{ opacity: 1 }}

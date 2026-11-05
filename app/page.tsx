@@ -134,7 +134,6 @@ function HomeContent() {
             <motion.div
               initial={{ scale: 0.8, y: 100, opacity: 0 }}
               animate={{
-                // The last value is 0.65 (not 1), so it stays compressed while launching
                 scale: [0.8, 1, 1, 0.65, 0.65],
                 y: [150, 0, 0, 250, -1500], 
                 opacity: [0, 1, 1, 1, 0]
@@ -157,7 +156,23 @@ function HomeContent() {
                 <img 
                   src={selectedSong.albumArt} 
                   alt={selectedSong.title} 
-                  className="w-72 h-72 md:w-80 md:h-80 object-cover" 
+                  className="w-72 h-72 md:w-80 md:h-80 object-cover relative z-10" 
+                />
+
+                {/* STATIC DIRECTIONAL DEPTH GRADIENT (Bumped up) */}
+                <div className="absolute inset-0 z-15 bg-gradient-to-br from-white/60 via-transparent to-black/70 pointer-events-none" />
+
+                {/* DIAGONAL LIGHT SWEEP */}
+                <motion.div
+                  initial={{ top: '-200%', left: '-200%', opacity: 0 }}
+                  animate={{ top: '200%', left: '200%', opacity: [0, 1, 0] }}
+                  transition={{ 
+                    duration: 1.2, 
+                    delay: 0.4, 
+                    ease: "easeInOut" 
+                  }}
+                  className="absolute w-[300px] h-[1500px] bg-gradient-to-r from-transparent via-white/90 to-transparent blur-[4px] z-20 pointer-events-none"
+                  style={{ transform: 'rotate(45deg)' }} 
                 />
               </div>
 

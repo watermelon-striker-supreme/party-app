@@ -51,7 +51,7 @@ function HomeContent() {
     // Route after 3.0 seconds
     setTimeout(() => {
       router.push(`/feed?room=${room}`);
-    }, 3000);
+    }, 2800);
   };
 
   return (
